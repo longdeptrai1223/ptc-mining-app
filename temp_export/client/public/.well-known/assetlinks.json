@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.netlify.ptcoin.twa",
+    "sha256_cert_fingerprints": ["0F:A4:EE:14:C3:72:73:61:2D:DA:D5:06:9E:AD:12:B4:F7:47:CA:AD:F2:2A:A0:87:1D:14:E1:4D:12:F6:9D:B8"]
+  }
+}]
