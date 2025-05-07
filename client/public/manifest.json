@@ -9,15 +9,28 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "icon192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192", 
+      "purpose": "any"
     },
     {
-      "src": "logo512.png",
+      "src": "icon512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "maskable_icon192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "maskable_icon512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
@@ -46,7 +59,8 @@
   "related_applications": [
     {
       "platform": "play",
-      "id": "app.netlify.ptcoin.twa"
+      "id": "app.netlify.ptcoin.twa",
+      "url": "https://play.google.com/store/apps/details?id=app.netlify.ptcoin.twa"
     }
   ],
   "launch_handler": {
@@ -62,6 +76,56 @@
   "scope_extensions": [
     {
       "origin": "*.netlify.app"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/handle-files/",
+      "accept": {
+        "application/json": [".ptc"]
+      }
+    }
+  ],
+  "handle_links": "preferred",
+  "protocol_handlers": [
+    {
+      "protocol": "web+ptc",
+      "url": "/protocol/%s"
+    }
+  ],
+  "share_target": {
+    "action": "/share-target/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "shortcuts": [
+    {
+      "name": "Start Mining",
+      "short_name": "Mine",
+      "description": "Start mining PTC coins",
+      "url": "/dashboard?action=mine",
+      "icons": [{ "src": "icon192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Invite Friends",
+      "short_name": "Invite",
+      "description": "Invite friends to boost your mining rate",
+      "url": "/dashboard?action=invite",
+      "icons": [{ "src": "icon192.png", "sizes": "192x192" }]
+    }
+  ],
+  "widgets": [
+    {
+      "name": "PTC Mining Status",
+      "short_name": "Mining",
+      "description": "Shows your current mining status and coin balance",
+      "tag": "mining-status",
+      "screenshot": "screenshots/widget.png",
+      "icons": [{ "src": "icon192.png", "sizes": "192x192" }]
     }
   ]
 }
