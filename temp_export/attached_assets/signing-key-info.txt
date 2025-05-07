@@ -1,0 +1,10 @@
+Keep this file and signing.keystore in a safe place. You'll need these files if you want to upload future versions of your PWA to the Google Play Store.
+
+Key store file: signing.keystore
+Key store password: Yx5vNtPSwrKO
+Key alias: my-key-alias
+Key password: Yx5vNtPSwrKO
+Signer's full name: PTC Admin
+Signer's organization: PTC - Mine Virtual Coins
+Signer's organizational unit: Engineering
+Signer's country code: US

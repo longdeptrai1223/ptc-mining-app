@@ -1,0 +1,86 @@
+import { useEffect } from "react";
+import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+export default function Login() {
+  const { user, signInWithGoogle, loading } = useAuth();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
+  // Parse referral code from URL if present
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    
+    if (refCode) {
+      // Store the referral code in local storage to use after login
+      localStorage.setItem('ptc_referral_code', refCode);
+    }
+  }, []);
+
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-gray-100 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+              <span className="material-icons text-white text-3xl">monetization_on</span>
+            </div>
+          </div>
+          <CardTitle className="text-2xl font-bold text-center">Welcome to PTC Coin</CardTitle>
+          <CardDescription className="text-center">Mine virtual coins, invite friends, and earn rewards!</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 text-center">
+              Sign in with your Google account to start mining PTC coins. It's completely free!
+            </p>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-medium mb-2">Key Features:</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start">
+                  <span className="material-icons text-primary mr-2 text-sm">check_circle</span>
+                  <span>Mine 0.1 PTC every 24 hours</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="material-icons text-primary mr-2 text-sm">check_circle</span>
+                  <span>Watch ads to boost mining rate by 5x</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="material-icons text-primary mr-2 text-sm">check_circle</span>
+                  <span>Invite friends for permanent mining boosts</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="material-icons text-primary mr-2 text-sm">check_circle</span>
+                  <span>Works offline and syncs automatically</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button 
+            className="w-full bg-primary hover:bg-indigo-700 text-white py-6 flex items-center justify-center gap-2"
+            onClick={signInWithGoogle}
+            disabled={loading}
+          >
+            {loading ? (
+              <span className="material-icons animate-spin">refresh</span>
+            ) : (
+              <span className="material-icons">login</span>
+            )}
+            Sign in with Google
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
