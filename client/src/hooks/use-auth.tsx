@@ -2,7 +2,9 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { 
   User, 
-  signInWithPopup, 
+  signInWithRedirect, 
+  signInWithPopup,
+  getRedirectResult,
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
@@ -25,6 +27,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [, navigate] = useLocation();
 
   useEffect(() => {
+    // Handle redirect result on component mount
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // Successfully signed in after redirect
+          navigate("/dashboard");
+        }
+      } catch (error) {
+        console.error("Error handling redirect result:", error);
+      }
+    };
+    
+    handleRedirectResult();
+    
+    // Normal auth state handling
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       setLoading(true);
       
@@ -66,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const signInWithGoogle = async () => {
     try {
