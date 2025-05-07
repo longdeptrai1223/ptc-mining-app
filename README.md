@@ -1,103 +1,100 @@
-# PTC Coin - Virtual Mining App
+# PTC Coin - Virtual Coin Mining PWA
 
-![PTC Coin Logo](./generated-icon.png)
+PTC (Push-To-Click) Coin is a Progressive Web App that simulates coin mining through user engagement. Users can earn virtual coins by clicking a mining button, watching rewarded ads, and inviting friends.
 
-A Progressive Web App (PWA) for virtual coin mining that allows users to earn PTC coins over time.
+## Key Features
 
-## Features
-
-- 🪙 **Virtual Mining**: Mine 0.1 PTC per 24-hour session
-- 🔌 **Offline Support**: Mining continues even when the app is closed
-- 👥 **Referral System**: Each referral gives a permanent 0.1x mining speed boost (up to 2.0x total)
-- 📱 **Ad Boost**: Watch ads to get 5x mining speed for 2 hours (stackable up to 24 hours)
-- 🔔 **Push Notifications**: Get notified when mining sessions complete
-- 📊 **Mining History**: View all your past mining sessions
-- 🔒 **Google Authentication**: Secure login with Firebase
-- 📱 **Mobile-First Design**: Optimized for mobile devices
-- 🌐 **PWA Compatible**: Installable on any device with a modern browser
+- **Virtual Coin Mining**: Earn 0.1 PTC every 24 hours by clicking "Mine"
+- **Rewarded Ad Buffs**: Watch ads to get 5x mining speed for 2 hours (stackable up to 24 hours)
+- **Referral System**: Invite friends for permanent mining boosts (up to 2.0x)
+- **Offline Mining**: Continue mining even when offline
+- **Background Sync**: Automatically syncs data when back online
+- **Push Notifications**: Get notified when mining completes
+- **PWA Compatible**: Install as a native-like app on any device
+- **Mobile-First Design**: Optimized for mobile experience
+- **Dark Mode Support**: Comfortable viewing in any lighting condition
 
 ## Tech Stack
 
-- **Frontend**: React, Vite, Tailwind CSS, Shadcn/UI
-- **Backend**: Express.js
+- **Frontend**: React, TypeScript, Tailwind CSS, Shadcn UI
+- **Backend**: Express.js, Node.js
 - **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Firebase Authentication
+- **Authentication**: Firebase Authentication (Google Sign-In)
 - **Storage**: Firebase Firestore
-- **Hosting**: Netlify-compatible
-- **Mobile**: PWA with Android app conversion using PWA Builder
+- **Notifications**: Firebase Cloud Messaging
+- **Monetization**: Google AdMob
+- **Deployment**: Netlify
 
-## Setup Instructions
+## Getting Started
 
 ### Prerequisites
 
-- Node.js v18 or later
-- Firebase account
-- PostgreSQL database (Neon or local)
-
-### Environment Variables
-
-The following environment variables need to be set:
-
-```
-# Database
-DATABASE_URL=postgresql://username:password@host:port/database
-
-# Firebase
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_APP_ID=your_app_id
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-VITE_FIREBASE_VAPID_KEY=your_vapid_key
-```
+- Node.js 18+
+- PostgreSQL database
+- Firebase project with Authentication enabled
+- AdMob account (optional, for monetization)
 
 ### Installation
 
-1. Clone the repository
+1. Clone the repository:
    ```
    git clone https://github.com/yourusername/ptc-coin.git
    cd ptc-coin
    ```
 
-2. Install dependencies
+2. Install dependencies:
    ```
    npm install
    ```
 
-3. Set up the database
+3. Create a `.env` file based on `.env.example` and fill in your credentials:
+   ```
+   cp .env.example .env
+   ```
+
+4. Push the database schema:
    ```
    npm run db:push
    ```
 
-4. Run the development server
+5. Start the development server:
    ```
    npm run dev
    ```
 
-5. Open the application at http://localhost:3000
+## Firebase Configuration
+
+1. Create a Firebase project at [https://console.firebase.google.com/](https://console.firebase.google.com/)
+2. Enable Google Authentication in the Authentication section
+3. Add your development and production domains to the authorized domains list
+4. Create a web app in your Firebase project and copy the configuration details to your `.env` file
 
 ## Deployment
 
 ### Netlify Deployment
 
-This app is configured for easy deployment on Netlify:
-
-1. Connect your GitHub repository to Netlify
-2. Set the build command to `npm run build`
-3. Set the publish directory to `dist`
-4. Add all required environment variables in Netlify's dashboard
+1. Push your code to GitHub
+2. Connect your repository to Netlify
+3. Configure the build settings:
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+4. Add your environment variables in the Netlify console
+5. Deploy!
 
 ### Android App Conversion
 
-To convert the PWA to an Android app:
-
-1. Deploy the app to a live URL
-2. Use [PWA Builder](https://www.pwabuilder.com/) to convert the PWA to an Android app
-3. Package the app using the generated APK/AAB files
+1. After deploying to Netlify, use PWA Builder to convert to Android app
+2. Follow the PWA Builder instructions to create an APK/AAB file
+3. Upload to Google Play Console
 
 ## License
 
-MIT
+[MIT License](LICENSE)
 
-## Author
+## Privacy Policy
 
-[Your Name]
+See [PRIVACY_POLICY.md](PRIVACY_POLICY.md)
+
+## Terms of Service
+
+See [TERMS_OF_SERVICE.md](TERMS_OF_SERVICE.md)

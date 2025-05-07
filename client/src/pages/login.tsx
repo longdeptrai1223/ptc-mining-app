@@ -81,6 +81,10 @@ export default function Login() {
           </Button>
         </CardFooter>
       </Card>
+      <div className="mt-4 text-center text-xs text-gray-500">
+        <a href="/privacy-policy" className="hover:underline mr-4">Privacy Policy</a>
+        <a href="/terms-of-service" className="hover:underline">Terms of Service</a>
+      </div>
     </div>
   );
 }
