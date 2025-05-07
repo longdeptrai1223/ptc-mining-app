@@ -1,0 +1,35 @@
+{
+  "short_name": "PTC Coin",
+  "name": "PTC Coin - Mine Virtual Coins",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#6366F1",
+  "background_color": "#F3F4F6",
+  "orientation": "portrait",
+  "description": "Mine virtual PTC coins with your mobile device. Earn rewards, invite friends, and boost your mining power!",
+  "scope": "/",
+  "prefer_related_applications": true,
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "app.netlify.ptcoin.twa"
+    }
+  ]
+}
