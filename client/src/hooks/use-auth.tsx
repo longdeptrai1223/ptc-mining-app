@@ -88,10 +88,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      // Use signInWithRedirect instead of signInWithPopup for better reliability in production
-      await signInWithRedirect(auth, googleProvider);
-      // Note: Navigation happens in the useEffect hook's handleRedirectResult function
-      // when the user is redirected back to your site
+      // Kiểm tra nếu đang chạy trong môi trường giả lập/Android WebView
+      // navigator.userAgent thường có chứa "Android" hoặc "wv" nếu đang chạy trong WebView
+      const isWebView = /Android.*wv/.test(navigator.userAgent) || 
+                        window.navigator.userAgent.includes('AppWebView') ||
+                        document.documentElement.classList.contains('pwa-builder-android');
+      
+      if (isWebView) {
+        // Sử dụng Popup trong WebView vì Redirect thường gặp vấn đề
+        console.log("Đăng nhập bằng Popup (đang chạy trong WebView/Giả lập)");
+        const result = await signInWithPopup(auth, googleProvider);
+        if (result.user) {
+          navigate("/dashboard");
+        }
+      } else {
+        // Sử dụng Redirect trong trình duyệt web thông thường
+        console.log("Đăng nhập bằng Redirect (đang chạy trong trình duyệt web)");
+        await signInWithRedirect(auth, googleProvider);
+        // Navigation xảy ra trong useEffect thông qua handleRedirectResult
+      }
     } catch (error) {
       console.error("Error signing in with Google:", error);
     }
