@@ -1,6 +1,6 @@
 [build]
-  command = "npm run build"
-  publish = "dist"
+  command = "npm run build && node copy-netlify-files.js"
+  publish = "dist/public"
 
 # Redirects all routes to index.html for SPA routing
 [[redirects]]
