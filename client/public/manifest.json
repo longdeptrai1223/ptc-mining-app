@@ -1,6 +1,7 @@
 {
   "short_name": "PTC Coin",
   "name": "PTC Coin - Mine Virtual Coins",
+  "id": "ptc-coin-app",
   "icons": [
     {
       "src": "favicon.ico",
@@ -15,11 +16,27 @@
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/desktop.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "form_factor": "wide"
+    },
+    {
+      "src": "screenshots/mobile.png",
+      "type": "image/png",
+      "sizes": "750x1334",
+      "form_factor": "narrow"
     }
   ],
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay"],
   "theme_color": "#6366F1",
   "background_color": "#F3F4F6",
   "orientation": "portrait",
@@ -31,5 +48,11 @@
       "platform": "play",
       "id": "app.netlify.ptcoin.twa"
     }
-  ]
+  ],
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }
