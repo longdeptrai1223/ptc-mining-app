@@ -88,8 +88,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-      navigate("/dashboard");
+      // Use signInWithRedirect instead of signInWithPopup for better reliability in production
+      await signInWithRedirect(auth, googleProvider);
+      // Note: Navigation happens in the useEffect hook's handleRedirectResult function
+      // when the user is redirected back to your site
     } catch (error) {
       console.error("Error signing in with Google:", error);
     }
