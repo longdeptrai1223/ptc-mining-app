@@ -22,16 +22,16 @@ function Router() {
 function App() {
   return (
     <AuthProvider>
-      <MiningProvider>
+      <NotificationProvider>
         <ReferralProvider>
-          <NotificationProvider>
+          <MiningProvider>
             <SyncProvider>
               <OfflineIndicator />
               <Router />
             </SyncProvider>
-          </NotificationProvider>
+          </MiningProvider>
         </ReferralProvider>
-      </MiningProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }
