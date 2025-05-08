@@ -9,10 +9,16 @@ export default function Login() {
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
+   if (user && !loading) {
+      console.log("Người dùng đã đăng nhập trong trang Login, chuyển hướng đến Dashboard");
+      // Trì hoãn chuyển hướng một chút để tránh vòng lặp
+      const timeoutId = setTimeout(() => {
+        navigate("/dashboard");
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   // Parse referral code from URL if present
   useEffect(() => {
