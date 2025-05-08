@@ -50,6 +50,14 @@ export default function Login() {
     }
   }, []);
 
+  // Track login attempts
+  const handleLoginClick = () => {
+    const newAttempts = loginAttempts + 1;
+    setLoginAttempts(newAttempts);
+    localStorage.setItem("auth_login_attempts", String(newAttempts));
+    signInWithGoogle();
+  };
+
   // Xử lý trạng thái đăng nhập và chuyển hướng
   useEffect(() => {
     console.log("Login Page - Kiểm tra trạng thái đăng nhập:", 
@@ -136,7 +144,7 @@ export default function Login() {
         <CardFooter className="flex flex-col gap-4">
           <Button 
             className="w-full bg-primary hover:bg-indigo-700 text-white py-6 flex items-center justify-center gap-2"
-            onClick={signInWithGoogle}
+            onClick={handleLoginClick}
             disabled={loading}
           >
             {loading ? (
