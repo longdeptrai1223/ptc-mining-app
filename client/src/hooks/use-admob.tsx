@@ -9,8 +9,10 @@ declare global {
   }
 }
 
-// Các ID quảng cáo test cho môi trường phát triển
-const TEST_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917"; // ID test của Google
+// ID AdMob
+const ADMOB_APP_ID = "ca-app-pub-3940256099942544~3347511713"; // Thay bằng App ID thực của bạn
+const TEST_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917"; // ID test của Google 
+const REAL_AD_UNIT_ID = "ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ"; // Thay bằng Ad Unit ID thực của bạn
 
 export function useAdMob() {
   const { activateAdBuff } = useMining();
@@ -27,11 +29,9 @@ export function useAdMob() {
   const initializeAdMob = useCallback(() => {
     if (isNativeEnvironment()) {
       try {
-        // Khởi tạo AdMob với App ID thực tế
-        // Bạn sẽ cần thay thế ID này bằng App ID thực tế từ AdMob console
+        // Khởi tạo AdMob với App ID
         window.AdMob.initialize({
-          // Đây là ID test, hãy thay thế bằng ID thực của bạn
-          appId: "ca-app-pub-3940256099942544~3347511713", 
+          appId: ADMOB_APP_ID, // Sử dụng App ID đã khai báo ở trên
         });
         console.log("AdMob initialized successfully");
         setAdInitialized(true);
@@ -50,9 +50,11 @@ export function useAdMob() {
     return new Promise<void>((resolve, reject) => {
       if (isNativeEnvironment() && adInitialized) {
         try {
-          // Sử dụng ID test trong môi trường phát triển
-          // Thay thế bằng ID thực tế khi xuất bản
-          const adUnitId = TEST_AD_UNIT_ID;
+          // Quyết định sử dụng ID thực tế hay ID test
+          const isProduction = process.env.NODE_ENV === 'production';
+          const adUnitId = isProduction ? REAL_AD_UNIT_ID : TEST_AD_UNIT_ID;
+          
+          console.log(`Using ${isProduction ? 'PRODUCTION' : 'TEST'} ad unit ID`);
             
           // Đăng ký các sự kiện quảng cáo
           window.AdMob.addListener('onRewardedVideoAdLoaded', () => {
