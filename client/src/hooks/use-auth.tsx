@@ -27,34 +27,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [, navigate] = useLocation();
 
   useEffect(() => {
+     // Biến để kiểm soát chuyển hướng
+    let redirectTriggered = false;
+    let isAuthenticated = false;
+    
     // Handle redirect result on component mount
     const handleRedirectResult = async () => {
       try {
+        console.log("Đang xử lý kết quả chuyển hướng đăng nhập...");
         const result = await getRedirectResult(auth);
-        if (result) {
-          // Successfully signed in after redirect
-          navigate("/dashboard");
+      if (result && result.user) {
+          console.log("Đăng nhập thành công sau khi chuyển hướng:", result.user.displayName);
+          isAuthenticated = true;
+          
+          // Đánh dấu đã xử lý redirect và chuyển hướng người dùng
+          if (!redirectTriggered) {
+            redirectTriggered = true;
+            navigate("/dashboard");
+          }
         }
       } catch (error) {
-        console.error("Error handling redirect result:", error);
+        console.error("Lỗi khi xử lý kết quả chuyển hướng:", error);
       }
     };
-    
+
+    // Xử lý kết quả redirect ngay khi component mount
     handleRedirectResult();
     
-    // Normal auth state handling
+    // Xử lý trạng thái xác thực thông thường
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      console.log("Trạng thái xác thực thay đổi:", authUser ? "Đã đăng nhập" : "Chưa đăng nhập");
       setLoading(true);
       
       if (authUser) {
         setUser(authUser);
+        isAuthenticated = true;
         
-        // Check if user document exists in Firestore
+        // Kiểm tra nếu tài liệu người dùng tồn tại trong Firestore
         const userDocRef = doc(db, "users", authUser.uid);
         const userDoc = await getDoc(userDocRef);
         
         if (!userDoc.exists()) {
-          // Create new user document
+          console.log("Tạo tài liệu người dùng mới cho:", authUser.displayName);
+          // Tạo tài liệu người dùng mới
           const inviteCode = nanoid(8).toUpperCase();
           await setDoc(userDocRef, {
             email: authUser.email,
@@ -71,19 +86,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             lastActive: serverTimestamp(),
           });
         } else {
-          // Update last active timestamp
+          // Cập nhật timestamp hoạt động gần nhất
           await setDoc(userDocRef, {
             lastActive: serverTimestamp(),
           }, { merge: true });
         }
+       
+        // Chỉ chuyển hướng nếu người dùng đã xác thực và chưa được chuyển hướng
+        if (isAuthenticated && !redirectTriggered) {
+          redirectTriggered = true;
+          navigate("/dashboard");
+        }
       } else {
         setUser(null);
+        isAuthenticated = false;
       }
       
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Cleanup khi component unmount
+    return () => {
+      unsubscribe();
+    };
   }, [navigate]);
 
   const signInWithGoogle = async () => {
