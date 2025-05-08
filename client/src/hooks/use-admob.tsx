@@ -9,7 +9,7 @@ declare global {
   }
 }
 
-// ID AdMob
+// ID AdMob - Đã cập nhật với ID thật
 const ADMOB_APP_ID = "ca-app-pub-1036908490208022~1603978249"; // App ID thực của bạn
 const TEST_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917"; // ID test của Google 
 const REAL_AD_UNIT_ID = "ca-app-pub-1036908490208022/8424854697"; // Ad Unit ID thực của bạn
