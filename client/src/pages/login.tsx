@@ -1,12 +1,19 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+// Phát hiện môi trường Android WebView
+const isAndroid = /Android/i.test(navigator.userAgent);
+const isWebView = /wv|WebView|PTCWV/.test(navigator.userAgent);
+
 export default function Login() {
   const { user, signInWithGoogle, loading } = useAuth();
   const [, navigate] = useLocation();
+  const [waitingRedirect, setWaitingRedirect] = useState(false);
+  const [androidWebViewDetected, setAndroidWebViewDetected] = useState(isAndroid || isWebView);
+  const [loginAttempts, setLoginAttempts] = useState(0);
 
   // Xử lý trạng thái đăng nhập và chuyển hướng
   useEffect(() => {
