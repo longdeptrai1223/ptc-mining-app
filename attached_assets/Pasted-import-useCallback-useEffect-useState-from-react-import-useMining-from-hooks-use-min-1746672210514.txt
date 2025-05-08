@@ -10,9 +10,9 @@ declare global {
 }
 
 // ID AdMob
-const ADMOB_APP_ID = "ca-app-pub-1036908490208022~1603978249"; // App ID thực của bạn
+const ADMOB_APP_ID = "ca-app-pub-3940256099942544~3347511713"; // Thay bằng App ID thực của bạn
 const TEST_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917"; // ID test của Google 
-const REAL_AD_UNIT_ID = "ca-app-pub-1036908490208022/8424854697"; // Ad Unit ID thực của bạn
+const REAL_AD_UNIT_ID = "ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ"; // Thay bằng Ad Unit ID thực của bạn
 
 export function useAdMob() {
   const { activateAdBuff } = useMining();
