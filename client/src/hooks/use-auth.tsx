@@ -27,34 +27,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [, navigate] = useLocation();
 
   useEffect(() => {
+    // Biến để kiểm soát chuyển hướng
+    let redirectTriggered = false;
+    let isAuthenticated = false;
+    
     // Handle redirect result on component mount
     const handleRedirectResult = async () => {
       try {
+        console.log("Đang xử lý kết quả chuyển hướng đăng nhập...");
         const result = await getRedirectResult(auth);
-        if (result) {
-          // Successfully signed in after redirect
-          navigate("/dashboard");
+        if (result && result.user) {
+          console.log("Đăng nhập thành công sau khi chuyển hướng:", result.user.displayName);
+          isAuthenticated = true;
+          
+          // Đánh dấu đã xử lý redirect và chuyển hướng người dùng
+          if (!redirectTriggered) {
+            redirectTriggered = true;
+            navigate("/dashboard");
+          }
         }
       } catch (error) {
-        console.error("Error handling redirect result:", error);
+        console.error("Lỗi khi xử lý kết quả chuyển hướng:", error);
       }
     };
     
+    // Xử lý kết quả redirect ngay khi component mount
     handleRedirectResult();
     
-    // Normal auth state handling
+    // Xử lý trạng thái xác thực thông thường
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      console.log("Trạng thái xác thực thay đổi:", authUser ? "Đã đăng nhập" : "Chưa đăng nhập");
       setLoading(true);
       
       if (authUser) {
         setUser(authUser);
+        isAuthenticated = true;
         
-        // Check if user document exists in Firestore
+        // Kiểm tra nếu tài liệu người dùng tồn tại trong Firestore
         const userDocRef = doc(db, "users", authUser.uid);
         const userDoc = await getDoc(userDocRef);
         
         if (!userDoc.exists()) {
-          // Create new user document
+          console.log("Tạo tài liệu người dùng mới cho:", authUser.displayName);
+          // Tạo tài liệu người dùng mới
           const inviteCode = nanoid(8).toUpperCase();
           await setDoc(userDocRef, {
             email: authUser.email,
@@ -71,44 +86,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             lastActive: serverTimestamp(),
           });
         } else {
-          // Update last active timestamp
+          // Cập nhật timestamp hoạt động gần nhất
           await setDoc(userDocRef, {
             lastActive: serverTimestamp(),
           }, { merge: true });
         }
+        
+        // Chỉ chuyển hướng nếu người dùng đã xác thực và chưa được chuyển hướng
+        if (isAuthenticated && !redirectTriggered) {
+          redirectTriggered = true;
+          navigate("/dashboard");
+        }
       } else {
         setUser(null);
+        isAuthenticated = false;
       }
       
       setLoading(false);
     });
-
-    return () => unsubscribe();
+    
+    // Cleanup khi component unmount
+    return () => {
+      unsubscribe();
+    };
   }, [navigate]);
 
   const signInWithGoogle = async () => {
     try {
-      // Kiểm tra nếu đang chạy trong môi trường giả lập/Android WebView
-      // navigator.userAgent thường có chứa "Android" hoặc "wv" nếu đang chạy trong WebView
+      // Kiểm tra nếu đang chạy trong môi trường mobile hoặc WebView
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
       const isWebView = /Android.*wv/.test(navigator.userAgent) || 
                         window.navigator.userAgent.includes('AppWebView') ||
-                        document.documentElement.classList.contains('pwa-builder-android');
+                        document.documentElement.classList.contains('pwa-builder-android') ||
+                        /GSA\//.test(navigator.userAgent);
       
-      if (isWebView) {
-        // Sử dụng Popup trong WebView vì Redirect thường gặp vấn đề
-        console.log("Đăng nhập bằng Popup (đang chạy trong WebView/Giả lập)");
-        const result = await signInWithPopup(auth, googleProvider);
-        if (result.user) {
-          navigate("/dashboard");
+      // Sử dụng popup cho tất cả môi trường mobile và WebView để tránh chuyển hướng
+      if (isMobile || isWebView) {
+        console.log("Đăng nhập bằng Popup (môi trường mobile/WebView phát hiện)");
+        console.log("UserAgent:", navigator.userAgent);
+        
+        // Luôn mở rộng phạm vi (scope) cho Google provider
+        googleProvider.addScope('profile');
+        googleProvider.addScope('email');
+        
+        // Đặt prompt='select_account' để luôn hiển thị tùy chọn tài khoản
+        googleProvider.setCustomParameters({
+          prompt: 'select_account'
+        });
+        
+        try {
+          const result = await signInWithPopup(auth, googleProvider);
+          console.log("Đăng nhập thành công:", result.user?.displayName);
+          // Đảm bảo chuyển hướng sau khi đăng nhập thành công
+          if (result.user) {
+            navigate("/dashboard");
+          }
+        } catch (popupError) {
+          console.error("Lỗi popup:", popupError);
+          // Nếu popup bị chặn, thử phương pháp redirect
+          console.log("Thử phương pháp redirect sau khi popup thất bại");
+          await signInWithRedirect(auth, googleProvider);
         }
       } else {
         // Sử dụng Redirect trong trình duyệt web thông thường
-        console.log("Đăng nhập bằng Redirect (đang chạy trong trình duyệt web)");
+        console.log("Đăng nhập bằng Redirect (môi trường trình duyệt web)");
         await signInWithRedirect(auth, googleProvider);
         // Navigation xảy ra trong useEffect thông qua handleRedirectResult
       }
     } catch (error) {
-      console.error("Error signing in with Google:", error);
+      console.error("Lỗi đăng nhập với Google:", error);
     }
   };
 
