@@ -27,79 +27,127 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [, navigate] = useLocation();
 
   useEffect(() => {
+    console.log("=== KHỞI TẠO AUTH PROVIDER ===");
+    
     // Biến để kiểm soát chuyển hướng
     let redirectTriggered = false;
-    let isAuthenticated = false;
+    const wasRedirectTriggered = localStorage.getItem("auth_redirect_triggered") === "true";
+    const wasAuthCompleted = localStorage.getItem("auth_completed") === "true";
     
-    // Handle redirect result on component mount
+    // Xử lý kết quả redirect sau khi đăng nhập
     const handleRedirectResult = async () => {
       try {
-        console.log("Đang xử lý kết quả chuyển hướng đăng nhập...");
-        const result = await getRedirectResult(auth);
-        if (result && result.user) {
-          console.log("Đăng nhập thành công sau khi chuyển hướng:", result.user.displayName);
-          isAuthenticated = true;
+        console.log("📋 Kiểm tra kết quả chuyển hướng đăng nhập...");
+        console.log("Was redirect triggered:", wasRedirectTriggered);
+        console.log("Was auth completed:", wasAuthCompleted);
+        
+        // Nếu đã hoàn thành xác thực trong quá khứ (từ localStorage)
+        if (wasAuthCompleted) {
+          console.log("✅ Phát hiện đăng nhập thành công từ dữ liệu đã lưu");
+          localStorage.removeItem("auth_completed");
           
-          // Đánh dấu đã xử lý redirect và chuyển hướng người dùng
-          if (!redirectTriggered) {
+          // Nếu đang ở trang login, chuyển đến dashboard
+          if (window.location.pathname === "/") {
             redirectTriggered = true;
+            console.log("🔄 Chuyển hướng từ trang login đến dashboard");
             navigate("/dashboard");
+            return;
           }
         }
+        
+        // Chỉ tiếp tục nếu đã kích hoạt redirect trước đó
+        if (wasRedirectTriggered) {
+          console.log("📱 Đang xử lý kết quả sau redirect");
+          localStorage.removeItem("auth_redirect_triggered");
+          
+          const result = await getRedirectResult(auth);
+          if (result && result.user) {
+            console.log("✅ Đăng nhập redirect thành công:", result.user.displayName);
+            
+            // Lưu thông tin để tránh mất khi refresh
+            localStorage.setItem("auth_user_email", result.user.email || "");
+            localStorage.setItem("auth_user_name", result.user.displayName || "");
+            localStorage.setItem("auth_user_uid", result.user.uid);
+            localStorage.setItem("auth_completed", "true");
+            
+            if (!redirectTriggered) {
+              redirectTriggered = true;
+              console.log("🔄 Chuyển hướng đến dashboard sau khi redirect thành công");
+              navigate("/dashboard");
+            }
+          } else {
+            console.log("⚠️ Không nhận được kết quả redirect");
+          }
+        } else {
+          console.log("ℹ️ Không có redirect trước đó cần xử lý");
+        }
       } catch (error) {
-        console.error("Lỗi khi xử lý kết quả chuyển hướng:", error);
+        console.error("❌ Lỗi khi xử lý kết quả chuyển hướng:", error);
+        localStorage.removeItem("auth_redirect_triggered");
       }
     };
     
     // Xử lý kết quả redirect ngay khi component mount
     handleRedirectResult();
     
-    // Xử lý trạng thái xác thực thông thường
+    // Xử lý trạng thái xác thực
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-      console.log("Trạng thái xác thực thay đổi:", authUser ? "Đã đăng nhập" : "Chưa đăng nhập");
+      console.log("🔄 Trạng thái xác thực thay đổi:", authUser ? `Đã đăng nhập (${authUser.displayName})` : "Chưa đăng nhập");
       setLoading(true);
       
       if (authUser) {
         setUser(authUser);
-        isAuthenticated = true;
         
-        // Kiểm tra nếu tài liệu người dùng tồn tại trong Firestore
-        const userDocRef = doc(db, "users", authUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (!userDoc.exists()) {
-          console.log("Tạo tài liệu người dùng mới cho:", authUser.displayName);
-          // Tạo tài liệu người dùng mới
-          const inviteCode = nanoid(8).toUpperCase();
-          await setDoc(userDocRef, {
-            email: authUser.email,
-            displayName: authUser.displayName,
-            photoURL: authUser.photoURL,
-            inviteCode,
-            totalCoins: 0,
-            miningRate: 0.1,
-            permanentBuffMultiplier: 1,
-            temporaryBuffMultiplier: 1,
-            temporaryBuffExpiry: null,
-            referralCount: 0,
-            createdAt: serverTimestamp(),
-            lastActive: serverTimestamp(),
-          });
-        } else {
-          // Cập nhật timestamp hoạt động gần nhất
-          await setDoc(userDocRef, {
-            lastActive: serverTimestamp(),
-          }, { merge: true });
+        // Kiểm tra và cập nhật Firestore
+        try {
+          const userDocRef = doc(db, "users", authUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (!userDoc.exists()) {
+            console.log("🆕 Tạo hồ sơ người dùng mới cho:", authUser.displayName);
+            const inviteCode = nanoid(8).toUpperCase();
+            await setDoc(userDocRef, {
+              email: authUser.email,
+              displayName: authUser.displayName,
+              photoURL: authUser.photoURL,
+              inviteCode,
+              totalCoins: 0,
+              miningRate: 0.1,
+              permanentBuffMultiplier: 1,
+              temporaryBuffMultiplier: 1,
+              temporaryBuffExpiry: null,
+              referralCount: 0,
+              createdAt: serverTimestamp(),
+              lastActive: serverTimestamp(),
+            });
+          } else {
+            // Cập nhật timestamp hoạt động gần nhất
+            await setDoc(userDocRef, {
+              lastActive: serverTimestamp(),
+            }, { merge: true });
+          }
+        } catch (err) {
+          console.error("❌ Lỗi khi tương tác với Firestore:", err);
         }
         
-        // Chỉ chuyển hướng nếu người dùng đã xác thực và chưa được chuyển hướng
-        if (isAuthenticated && !redirectTriggered) {
+        // Chuyển hướng đến dashboard nếu đang ở trang login
+        const isLoginPage = window.location.pathname === "/";
+        if (isLoginPage && !redirectTriggered) {
           redirectTriggered = true;
-          navigate("/dashboard");
+          console.log("🔄 Chuyển hướng đến dashboard sau khi phát hiện đăng nhập");
+          setTimeout(() => {
+            navigate("/dashboard");
+          }, 100);
         }
       } else {
+        console.log("➖ Không có người dùng đăng nhập");
         setUser(null);
-        isAuthenticated = false;
+        
+        // Xóa thông tin đăng nhập đã lưu
+        localStorage.removeItem("auth_user_email");
+        localStorage.removeItem("auth_user_name");
+        localStorage.removeItem("auth_user_uid");
+        localStorage.removeItem("auth_completed");
       }
       
       setLoading(false);
@@ -107,54 +155,80 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Cleanup khi component unmount
     return () => {
+      console.log("🧹 Dọn dẹp Auth Provider");
       unsubscribe();
+      sessionStorage.removeItem("auth_in_progress");
     };
   }, [navigate]);
 
+  // PHƯƠNG PHÁP ĐĂNG NHẬP MỚI: SỬ DỤNG CHỈ POPUP CHO TẤT CẢ MÔI TRƯỜNG ANDROID
   const signInWithGoogle = async () => {
     try {
-      // Kiểm tra nếu đang chạy trong môi trường mobile hoặc WebView
-      const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
-      const isWebView = /Android.*wv/.test(navigator.userAgent) || 
-                        window.navigator.userAgent.includes('AppWebView') ||
-                        document.documentElement.classList.contains('pwa-builder-android') ||
-                        /GSA\//.test(navigator.userAgent);
+      console.log("=== BẮT ĐẦU QUÁ TRÌNH ĐĂNG NHẬP ===");
+      console.log("User Agent:", navigator.userAgent);
       
-      // Sử dụng popup cho tất cả môi trường mobile và WebView để tránh chuyển hướng
-      if (isMobile || isWebView) {
-        console.log("Đăng nhập bằng Popup (môi trường mobile/WebView phát hiện)");
-        console.log("UserAgent:", navigator.userAgent);
-        
-        // Luôn mở rộng phạm vi (scope) cho Google provider
-        googleProvider.addScope('profile');
-        googleProvider.addScope('email');
-        
-        // Đặt prompt='select_account' để luôn hiển thị tùy chọn tài khoản
-        googleProvider.setCustomParameters({
-          prompt: 'select_account'
-        });
+      // Luôn xóa trạng thái lưu trữ đăng nhập cũ
+      sessionStorage.removeItem("auth_in_progress");
+      localStorage.removeItem("auth_redirect_triggered");
+      
+      // Luôn cấu hình Google provider
+      googleProvider.addScope('profile');
+      googleProvider.addScope('email');
+      googleProvider.setCustomParameters({
+        prompt: 'select_account',
+        // Thêm cấu hình để tránh bộ nhớ cache
+        login_hint: Date.now().toString(),
+        access_type: 'offline'
+      });
+
+      // Ưu tiên phương pháp popup cho MỌI môi trường Android
+      if (/Android/i.test(navigator.userAgent)) {
+        console.log("🔴 PHÁT HIỆN MÔI TRƯỜNG ANDROID - SỬ DỤNG CHẾ ĐỘ ĐẶC BIỆT");
+        sessionStorage.setItem("auth_in_progress", "true");
         
         try {
+          // Thử đăng nhập với Popup
+          console.log("Đang thử phương pháp Popup...");
           const result = await signInWithPopup(auth, googleProvider);
-          console.log("Đăng nhập thành công:", result.user?.displayName);
-          // Đảm bảo chuyển hướng sau khi đăng nhập thành công
-          if (result.user) {
-            navigate("/dashboard");
+          
+          if (result && result.user) {
+            console.log("✅ Đăng nhập thành công với Popup!");
+            sessionStorage.removeItem("auth_in_progress");
+            
+            // Lưu thông tin xác thực vào localStorage để tránh mất khi refresh
+            localStorage.setItem("auth_user_email", result.user.email || "");
+            localStorage.setItem("auth_user_name", result.user.displayName || "");
+            localStorage.setItem("auth_user_uid", result.user.uid);
+            localStorage.setItem("auth_completed", "true");
+            
+            // Trì hoãn chuyển hướng để đảm bảo dữ liệu được lưu
+            setTimeout(() => {
+              navigate("/dashboard");
+            }, 300);
           }
         } catch (popupError) {
-          console.error("Lỗi popup:", popupError);
-          // Nếu popup bị chặn, thử phương pháp redirect
-          console.log("Thử phương pháp redirect sau khi popup thất bại");
-          await signInWithRedirect(auth, googleProvider);
+          console.error("❌ Lỗi khi sử dụng Popup:", popupError);
+          console.log("Đang thử phương pháp redirect thay thế...");
+          
+          // Đánh dấu đã kích hoạt redirect để xử lý khi quay lại
+          localStorage.setItem("auth_redirect_triggered", "true");
+          
+          // Thử phương pháp redirect nếu popup thất bại
+          await signInWithRedirect(auth, googleProvider).catch(err => {
+            console.error("❌❌ Cả hai phương pháp đều thất bại:", err);
+          });
         }
       } else {
-        // Sử dụng Redirect trong trình duyệt web thông thường
-        console.log("Đăng nhập bằng Redirect (môi trường trình duyệt web)");
+        // Môi trường không phải Android (web desktop)
+        console.log("Phát hiện môi trường web tiêu chuẩn - sử dụng redirect");
         await signInWithRedirect(auth, googleProvider);
-        // Navigation xảy ra trong useEffect thông qua handleRedirectResult
       }
     } catch (error) {
-      console.error("Lỗi đăng nhập với Google:", error);
+      console.error("❌❌❌ LỖI NGHIÊM TRỌNG TRONG QUÁ TRÌNH ĐĂNG NHẬP:", error);
+      
+      // Xóa trạng thái đăng nhập khi có lỗi
+      sessionStorage.removeItem("auth_in_progress");
+      localStorage.removeItem("auth_redirect_triggered");
     }
   };
 

@@ -8,13 +8,32 @@ export default function Login() {
   const { user, signInWithGoogle, loading } = useAuth();
   const [, navigate] = useLocation();
 
+  // Xử lý trạng thái đăng nhập và chuyển hướng
   useEffect(() => {
-    if (user && !loading) {
-      console.log("Người dùng đã đăng nhập trong trang Login, chuyển hướng đến Dashboard");
-      // Trì hoãn chuyển hướng một chút để tránh vòng lặp
+    console.log("Login Page - Kiểm tra trạng thái đăng nhập:", 
+                user ? `Đã đăng nhập (${user.displayName})` : "Chưa đăng nhập", 
+                "Loading:", loading);
+    
+    // Kiểm tra nếu người dùng đăng nhập từ localStorage
+    const savedUID = localStorage.getItem("auth_user_uid");
+    const savedEmail = localStorage.getItem("auth_user_email");
+    const isCompletedAuth = localStorage.getItem("auth_completed") === "true";
+    
+    if (savedUID && savedEmail || isCompletedAuth) {
+      console.log("✅ Phát hiện thông tin đăng nhập đã lưu, chuyển hướng...");
       const timeoutId = setTimeout(() => {
         navigate("/dashboard");
-      }, 100);
+      }, 200);
+      return () => clearTimeout(timeoutId);
+    }
+    
+    // Kiểm tra user đăng nhập thông thường
+    if (user && !loading) {
+      console.log("✅ Người dùng đã đăng nhập trong trang Login, chuyển hướng đến Dashboard");
+      // Trì hoãn chuyển hướng với thời gian dài hơn để đảm bảo dữ liệu đã được lưu
+      const timeoutId = setTimeout(() => {
+        navigate("/dashboard");
+      }, 300);
       
       return () => clearTimeout(timeoutId);
     }
