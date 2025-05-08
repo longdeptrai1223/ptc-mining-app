@@ -111,50 +111,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [navigate]);
 
+  // PHƯƠNG PHÁP ĐĂNG NHẬP MỚI: SỬ DỤNG CHỈ POPUP CHO TẤT CẢ MÔI TRƯỜNG ANDROID
   const signInWithGoogle = async () => {
     try {
-            // Kiểm tra nếu đang chạy trong môi trường mobile hoặc WebView
-      const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
-      const isWebView = /Android.*wv/.test(navigator.userAgent) || 
-                        window.navigator.userAgent.includes('AppWebView') ||
-                        document.documentElement.classList.contains('pwa-builder-android') ||
-                        /GSA\//.test(navigator.userAgent);
-
-         // Sử dụng popup cho tất cả môi trường mobile và WebView để tránh chuyển hướng
-      if (isMobile || isWebView) {
-        console.log("Đăng nhập bằng Popup (môi trường mobile/WebView phát hiện)");
-        console.log("UserAgent:", navigator.userAgent);
-        
-        // Luôn mở rộng phạm vi (scope) cho Google provider
-        googleProvider.addScope('profile');
-        googleProvider.addScope('email');
-        
-        // Đặt prompt='select_account' để luôn hiển thị tùy chọn tài khoản
-        googleProvider.setCustomParameters({
-          prompt: 'select_account'
-        });
+     console.log("=== BẮT ĐẦU QUÁ TRÌNH ĐĂNG NHẬP ===");
+      console.log("User Agent:", navigator.userAgent);
+      
+      // Luôn xóa trạng thái lưu trữ đăng nhập cũ
+      sessionStorage.removeItem("auth_in_progress");
+      localStorage.removeItem("auth_redirect_triggered");
+      
+      // Luôn cấu hình Google provider
+      googleProvider.addScope('profile');
+      googleProvider.addScope('email');
+      googleProvider.setCustomParameters({
+        prompt: 'select_account',
+        // Thêm cấu hình để tránh bộ nhớ cache
+        login_hint: Date.now().toString(),
+        access_type: 'offline'
+      });
+      
+      // Ưu tiên phương pháp popup cho MỌI môi trường Android
+      if (/Android/i.test(navigator.userAgent)) {
+        console.log("🔴 PHÁT HIỆN MÔI TRƯỜNG ANDROID - SỬ DỤNG CHẾ ĐỘ ĐẶC BIỆT");
+        sessionStorage.setItem("auth_in_progress", "true");
         
         try {
+          // Thử đăng nhập với Popup
+          console.log("Đang thử phương pháp Popup...");
           const result = await signInWithPopup(auth, googleProvider);
-          console.log("Đăng nhập thành công:", result.user?.displayName);
-          // Đảm bảo chuyển hướng sau khi đăng nhập thành công
-          if (result.user) {
-            navigate("/dashboard");
+           
+          if (result && result.user) {
+            console.log("✅ Đăng nhập thành công với Popup!");
+            sessionStorage.removeItem("auth_in_progress");
+            
+            // Lưu thông tin xác thực vào localStorage để tránh mất khi refresh
+            localStorage.setItem("auth_user_email", result.user.email || "");
+            localStorage.setItem("auth_user_name", result.user.displayName || "");
+            localStorage.setItem("auth_user_uid", result.user.uid);
+            localStorage.setItem("auth_completed", "true");
+            
+            // Trì hoãn chuyển hướng để đảm bảo dữ liệu được lưu
+            setTimeout(() => {
+              navigate("/dashboard");
+            }, 300);
           }
         } catch (popupError) {
-          console.error("Lỗi popup:", popupError);
-          // Nếu popup bị chặn, thử phương pháp redirect
-          console.log("Thử phương pháp redirect sau khi popup thất bại");
-          await signInWithRedirect(auth, googleProvider);
+          console.error("❌ Lỗi khi sử dụng Popup:", popupError);
+          console.log("Đang thử phương pháp redirect thay thế...");
+          
+          // Đánh dấu đã kích hoạt redirect để xử lý khi quay lại
+          localStorage.setItem("auth_redirect_triggered", "true");
+          
+          // Thử phương pháp redirect nếu popup thất bại
+          await signInWithRedirect(auth, googleProvider).catch(err => {
+            console.error("❌❌ Cả hai phương pháp đều thất bại:", err);
+          });
         }
       } else {
-        // Sử dụng Redirect trong trình duyệt web thông thường
-       console.log("Đăng nhập bằng Redirect (môi trường trình duyệt web)");
+       // Môi trường không phải Android (web desktop)
+        console.log("Phát hiện môi trường web tiêu chuẩn - sử dụng redirect");
         await signInWithRedirect(auth, googleProvider);
-        // Navigation xảy ra trong useEffect thông qua handleRedirectResult
       }
     } catch (error) {
-       console.error("Lỗi đăng nhập với Google:", error);
+       console.error("❌❌❌ LỖI NGHIÊM TRỌNG TRONG QUÁ TRÌNH ĐĂNG NHẬP:", error);
+      
+      // Xóa trạng thái đăng nhập khi có lỗi
+      sessionStorage.removeItem("auth_in_progress");
+      localStorage.removeItem("auth_redirect_triggered");
     }
   };
 
