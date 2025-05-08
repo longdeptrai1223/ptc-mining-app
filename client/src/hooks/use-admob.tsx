@@ -31,7 +31,7 @@ export function useAdMob() {
         // Bạn sẽ cần thay thế ID này bằng App ID thực tế từ AdMob console
         window.AdMob.initialize({
           // Đây là ID test, hãy thay thế bằng ID thực của bạn
-          appId: "ca-app-pub-3940256099942544~3347511713", 
+          appId: "ca-app-pub-1036908490208022~1603978249", 
         });
         console.log("AdMob initialized successfully");
         setAdInitialized(true);
@@ -52,7 +52,9 @@ export function useAdMob() {
         try {
           // Sử dụng ID test trong môi trường phát triển
           // Thay thế bằng ID thực tế khi xuất bản
-          const adUnitId = TEST_AD_UNIT_ID;
+          // Quyết định sử dụng ID thực tế hay ID test
+const isProduction = process.env.NODE_ENV === 'production';
+const adUnitId = isProduction ? "ca-app-pub-1036908490208022/8424854697" : TEST_AD_UNIT_ID;
             
           // Đăng ký các sự kiện quảng cáo
           window.AdMob.addListener('onRewardedVideoAdLoaded', () => {
