@@ -13,7 +13,42 @@ export default function Login() {
   const [, navigate] = useLocation();
   const [waitingRedirect, setWaitingRedirect] = useState(false);
   const [androidWebViewDetected, setAndroidWebViewDetected] = useState(isAndroid || isWebView);
-  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [loginAttempts, setLoginAttempts] = useState(() => {
+    const storedAttempts = Number(localStorage.getItem("auth_login_attempts") || "0");
+    return storedAttempts;
+  });
+  
+  // Debug User Agent và môi trường
+  useEffect(() => {
+    console.log("🔍 KIỂM TRA MÔI TRƯỜNG LOGIN:");
+    console.log("📱 User Agent:", navigator.userAgent);
+    
+    const isAndroidCheck = /Android/i.test(navigator.userAgent);
+    const isWebViewCheck = /wv|WebView/i.test(navigator.userAgent); 
+    const isChromeCheck = /Chrome/i.test(navigator.userAgent);
+    const isFirefoxCheck = /Firefox/i.test(navigator.userAgent);
+    
+    console.table({
+      isAndroid: isAndroidCheck,
+      isWebView: isWebViewCheck, 
+      isChrome: isChromeCheck,
+      isFirefox: isFirefoxCheck,
+      cookiesEnabled: navigator.cookieEnabled,
+      language: navigator.language,
+      platform: navigator.platform,
+      vendor: navigator.vendor
+    });
+    
+    // Kiểm tra tính năng lưu trữ
+    try {
+      localStorage.setItem('test_storage', 'test');
+      const retrieved = localStorage.getItem('test_storage');
+      console.log("✅ Kiểm tra localStorage:", retrieved === 'test' ? "Hoạt động" : "Lỗi");
+      localStorage.removeItem('test_storage');
+    } catch (err) {
+      console.error("❌ Lỗi localStorage:", err);
+    }
+  }, []);
 
   // Xử lý trạng thái đăng nhập và chuyển hướng
   useEffect(() => {
@@ -98,7 +133,7 @@ export default function Login() {
             </div>
           </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex flex-col gap-4">
           <Button 
             className="w-full bg-primary hover:bg-indigo-700 text-white py-6 flex items-center justify-center gap-2"
             onClick={signInWithGoogle}
@@ -111,6 +146,26 @@ export default function Login() {
             )}
             Sign in with Google
           </Button>
+          
+          {/* Debug Info - hiển thị thông tin về môi trường */}
+          <div className="text-xs text-gray-400 mt-2">
+            <details className="cursor-pointer">
+              <summary className="text-center">Thông tin debug</summary>
+              <div className="text-left mt-2 p-2 bg-gray-50 rounded text-xs">
+                <p>User Agent: <span className="break-all">{navigator.userAgent}</span></p>
+                <p>Platform: {navigator.platform}</p>
+                <p>Android: {/Android/i.test(navigator.userAgent) ? "Yes" : "No"}</p>
+                <p>WebView: {/wv|WebView/i.test(navigator.userAgent) ? "Yes" : "No"}</p>
+                <p>Firebase Domain: ptc-3c13a</p>
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <p>Login attempts: {loginAttempts}</p>
+                  {localStorage.getItem("auth_critical_error") && (
+                    <p className="text-red-500">Last error: {localStorage.getItem("auth_critical_error")}</p>
+                  )}
+                </div>
+              </div>
+            </details>
+          </div>
         </CardFooter>
       </Card>
       <div className="mt-4 text-center text-xs text-gray-500">

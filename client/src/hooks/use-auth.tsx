@@ -7,6 +7,10 @@ import {
   getRedirectResult,
   signOut,
   onAuthStateChanged,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  setPersistence,
+  GoogleAuthProvider
 } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -288,38 +292,103 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         include_granted_scopes: 'true'
       });
       
-      // ĐẶC BIỆT: Xử lý WebView Android
+      // ĐẶC BIỆT: Xử lý WebView Android - CẢI TIẾN v4
       if (isAndroidWebView) {
-        console.log("🔴 ĐẶC BIỆT: PHÁT HIỆN ANDROID WEBVIEW - SỬ DỤNG PHƯƠNG PHÁP CUSTOM");
-        sessionStorage.setItem("auth_in_progress", "true");
-        localStorage.setItem("auth_webview_mode", "true");
+        console.log("🔴 ĐẶC BIỆT: PHÁT HIỆN ANDROID WEBVIEW - SỬ DỤNG PHƯƠNG PHÁP HYBRID v4");
         
-        // 1. Lưu custom token để nhận diện quá trình này
-        const tokenIdentifier = `login_${Date.now()}`;
-        localStorage.setItem("auth_token_id", tokenIdentifier);
+        // PHƯƠNG PHÁP MỚI: Giúp tránh lỗi chuyển hướng
+        // - Không sử dụng redirect trong WebView
+        // - Cố gắng sử dụng popup dù trong WebView để tránh lỗi chuyển hướng
         
-        // 2. Sử dụng signInWithRedirect KHÔNG sử dụng popup trong WebView
-        console.log("⏩ WebView: Sử dụng phương pháp REDIRECT đặc biệt");
-        localStorage.setItem("auth_redirect_triggered", "true");
+        // 1. Đánh dấu thiết bị
+        const deviceId = `android_${Date.now()}`;
+        localStorage.setItem("ptc_device_id", deviceId);
+        sessionStorage.setItem("auth_attempt_time", Date.now().toString());
         
-        // Dùng timeout để đảm bảo localStorage được lưu
-        setTimeout(async () => {
-          try {
-            await signInWithRedirect(auth, googleProvider);
-          } catch (err: any) {
-            console.error("❌ WebView Redirect lỗi:", err);
-            
-            // Xử lý lỗi trong WebView - tăng cường ký quỹ thời gian
-            localStorage.setItem("auth_webview_error", JSON.stringify({
-              time: Date.now(),
-              type: 'redirect_error',
-              message: err?.message || 'Unknown error'
-            }));
-            
-            // Xóa cờ đánh dấu để tránh vòng lặp
-            localStorage.removeItem("auth_redirect_triggered");
-          }
-        }, 100);
+        // 2. Đặt thời gian lưu trạng thái đăng nhập
+        // Tăng tính bền bỉ của dữ liệu đăng nhập để tránh mất do chuyển trang/refresh
+        setPersistence(auth, browserLocalPersistence)
+          .then(() => {
+            console.log("✅ Đã thiết lập LOCAL persistence cho WebView");
+          })
+          .catch((err) => {
+            console.error("❌ Lỗi khi thiết lập persistence:", err);
+          });
+          
+        // 3. ĐẶC BIỆT: Thử dùng popup trên WebView Android thay vì redirect
+        console.log("⏩ WebView Android: THỬ DÙNG POPUP (phương pháp v4)");
+        
+        try {
+          // Xóa bỏ một số trường tham số có thể gây lỗi
+          const simplifiedProvider = googleProvider;
+          // Đảm bảo có các scope cần thiết
+          simplifiedProvider.addScope('email');
+          simplifiedProvider.addScope('profile');
+          
+          // Thêm login_hint để tránh cache
+          simplifiedProvider.setCustomParameters({
+            prompt: 'select_account', 
+            login_hint: `user_${Date.now()}@gmail.com`
+          });
+          
+          // Thử dùng signInWithPopup ngay cả trên WebView
+          // Đôi khi phương pháp này vẫn hoạt động trên một số thiết bị/ROM tùy biến
+          console.log("🔄 Đang thử phương pháp POPUP cho WebView...");
+          
+          signInWithPopup(auth, simplifiedProvider)
+            .then((result) => {
+              if (result && result.user) {
+                console.log("✅ THÀNH CÔNG: Đăng nhập WebView bằng popup!");
+                
+                // Lưu thông tin xác thực vào localStorage ngay lập tức
+                localStorage.setItem("auth_user_email", result.user.email || "");
+                localStorage.setItem("auth_user_name", result.user.displayName || "");
+                localStorage.setItem("auth_user_uid", result.user.uid);
+                localStorage.setItem("auth_completed", "true");
+                localStorage.setItem("auth_method", "popup_webview");
+                
+                // Chuyển hướng đến dashboard
+                setTimeout(() => {
+                  navigate("/dashboard");
+                }, 500);
+              }
+            })
+            .catch((popupError) => {
+              console.log("❌ Lỗi khi dùng popup trong WebView:", popupError);
+              
+              // Ghi log lỗi
+              localStorage.setItem("webview_popup_error", JSON.stringify({
+                time: Date.now(),
+                error: popupError?.message || "Unknown error"
+              }));
+              
+              // DỰ PHÒNG: Thử phương pháp redirect nếu popup thất bại
+              console.log("⏩ Thử phương pháp REDIRECT cho WebView (dự phòng)...");
+              localStorage.setItem("auth_redirect_triggered", "true");
+              
+              // Đợi 1 chút để đảm bảo localStorage được lưu
+              setTimeout(() => {
+                try {
+                  signInWithRedirect(auth, googleProvider)
+                    .catch((redirectError) => {
+                      console.error("❌❌ Cả popup và redirect đều thất bại:", redirectError);
+                      localStorage.removeItem("auth_redirect_triggered");
+                    });
+                } catch (finalError: any) {
+                  console.error("❌❌❌ Lỗi chí mạng:", finalError);
+                  localStorage.setItem("auth_critical_error", JSON.stringify({
+                    time: Date.now(),
+                    error: finalError?.message || "Unknown error"
+                  }));
+                }
+              }, 300);
+            });
+        } catch (error: any) {
+          console.error("❌ Lỗi khi khởi tạo đăng nhập WebView:", error);
+          
+          // Xóa cờ đánh dấu để tránh vòng lặp
+          localStorage.removeItem("auth_redirect_triggered");
+        }
       } 
       // Xử lý Chrome trên Android
       else if (isChromeOnAndroid) {
